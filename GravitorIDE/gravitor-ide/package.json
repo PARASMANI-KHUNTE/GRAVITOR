@@ -24,8 +24,30 @@
       {
         "command": "gravitor-ide.runCommand",
         "title": "Gravitor: Run Suggested Command"
+      },
+      {
+        "command": "gravitor-ide.focusChat",
+        "title": "Gravitor: Focus Chat"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "gravitor-sidebar",
+          "title": "Gravitor",
+          "icon": "$(sparkle)"
+        }
+      ]
+    },
+    "views": {
+      "gravitor-sidebar": [
+        {
+          "type": "webview",
+          "id": "gravitor.chatView",
+          "name": "Chat"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

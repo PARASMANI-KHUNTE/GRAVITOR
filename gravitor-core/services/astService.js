@@ -10,25 +10,22 @@ export class AstService {
     static extractCurrentBlock(code, cursorIndex) {
         if (!code) return "";
 
-        // 1. Look backwards for common function/class patterns
         const patterns = [
             /function\s+\w+\s*\(.*?\)\s*\{/g,
-            /\w+\s*\(.*?\)\s*\{/g, // Anonymous or method
+            /\w+\s*\(.*?\)\s*\{/g,
             /class\s+\w+\s*\{/g,
-            /const\s+\w+\s*=\s*\(.*?\)\s*=>\s*\{/g
+            /const\s+\w+\s*=\s*(async\s+)?\(.*?\)\s*=>\s*\{/g,
+            /export\s+const\s+\w+\s*=\s*(async\s+)?\(.*?\)\s*=>\s*\{/g
         ];
 
         let startPos = 0;
         let lastMatch = null;
-
-        // Simple search for the last open brace/declaration before cursor
         const textBefore = code.slice(0, cursorIndex);
 
-        // Find the 'start' of what looks like a block
         for (const pattern of patterns) {
             let match;
             while ((match = pattern.exec(textBefore)) !== null) {
-                if (match.index > startPos) {
+                if (match.index >= startPos) {
                     startPos = match.index;
                     lastMatch = match[0];
                 }
@@ -36,10 +33,33 @@ export class AstService {
         }
 
         if (startPos === 0 && !lastMatch) return "";
-
-        // 2. Return the block from start to the end of the file (model will see the prefix)
-        // Or we could try to find the balancing brace, but for 'Prediction Mode', 
-        // the model just needs to know it's inside 'function add(a, b) { ...'
         return code.slice(startPos);
+    }
+
+    /**
+     * Extracts all major code blocks (functions, classes) from a file for indexing.
+     */
+    static extractSymbols(code) {
+        const symbols = [];
+        const patterns = [
+            /async\s+function\s+[\w$]+\s*\(.*?\)\s*\{/g,
+            /function\s+[\w$]+\s*\(.*?\)\s*\{/g,
+            /class\s+[\w$]+\s*\{/g,
+            /const\s+[\w$]+\s*=\s*(async\s+)?\(.*?\)\s*=>\s*\{/g,
+            /export\s+const\s+[\w$]+\s*=\s*(async\s+)?\(.*?\)\s*=>\s*\{/g
+        ];
+
+        for (const pattern of patterns) {
+            let match;
+            while ((match = pattern.exec(code)) !== null) {
+                const start = match.index;
+                // Get the block text starting from this symbol
+                const block = this.extractCurrentBlock(code, start + match[0].length);
+                if (block) {
+                    symbols.push(block);
+                }
+            }
+        }
+        return symbols;
     }
 }

@@ -1,5 +1,6 @@
 import express from "express";
 import { vectorService } from "../services/vectorService.js";
+import { AstService } from "../services/astService.js";
 
 const router = express.Router();
 
@@ -14,16 +15,21 @@ router.post("/", async (req, res) => {
         return res.status(400).json({ error: "Text and filename required" });
     }
 
-    // Split text into ~20 line chunks
+    // 1. Symbol-based chunks (Semantic structures)
+    const symbols = AstService.extractSymbols(text);
+
+    // 2. Line-based chunks (Safety fallback)
     const lines = text.split('\n');
     const chunkSize = 20;
-
-    const chunks = [];
+    const fallbackChunks = [];
     for (let i = 0; i < lines.length; i += chunkSize) {
-        chunks.push(lines.slice(i, i + chunkSize).join('\n'));
+        fallbackChunks.push(lines.slice(i, i + chunkSize).join('\n'));
     }
 
-    console.log(`[RAG] Indexing ${chunks.length} chunks for ${filename}...`);
+    // Combine and deduplicate roughly (symbol chunks are prioritized)
+    const chunks = [...new Set([...symbols, ...fallbackChunks])];
+
+    console.log(`[RAG] Indexing ${chunks.length} chunks (${symbols.length} symbols) for ${filename}...`);
 
     let successCount = 0;
     for (const chunk of chunks) {

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { GravitorInlineProvider } from './inlineProvider';
 import { ApiClient } from './apiClient';
+import { ChatViewProvider } from './chatViewProvider';
 
 
 export function activate(context: vscode.ExtensionContext) {
@@ -41,7 +42,9 @@ export function activate(context: vscode.ExtensionContext) {
     // Register indexing command
     const indexCommand = vscode.commands.registerCommand('gravitor-ide.indexFile', async () => {
         const editor = vscode.window.activeTextEditor;
-        if (!editor) return;
+        if (!editor) {
+            return;
+        }
 
         const text = editor.document.getText();
         const filename = editor.document.fileName;
@@ -103,7 +106,29 @@ export function activate(context: vscode.ExtensionContext) {
         new GravitorInlineProvider()
     );
 
-    context.subscriptions.push(askAiCommand, indexCommand, runCommand, inlineProvider);
+    // Phase F: Chat Sidebar
+    const chatProvider = new ChatViewProvider(context.extensionUri);
+    context.subscriptions.push(
+        vscode.window.registerWebviewViewProvider(ChatViewProvider.viewType, chatProvider)
+    );
+
+    const focusChat = vscode.commands.registerCommand('gravitor-ide.focusChat', () => {
+        vscode.commands.executeCommand('gravitor.chatView.focus');
+    });
+
+    // Phase E: Auto-Indexing on save
+    const onSaveListener = vscode.workspace.onDidSaveTextDocument(async (document) => {
+        const apiClient = new ApiClient();
+        try {
+            await apiClient.indexFile(document.getText(), document.fileName);
+            // Silent success for auto-indexing to avoid notification fatigue
+            console.log(`[Gravitor] Auto-indexed ${document.fileName}`);
+        } catch (err) {
+            console.error(`[Gravitor] Auto-indexing failed for ${document.fileName}`);
+        }
+    });
+
+    context.subscriptions.push(askAiCommand, indexCommand, runCommand, inlineProvider, onSaveListener, focusChat);
 }
 
 export function deactivate() { }

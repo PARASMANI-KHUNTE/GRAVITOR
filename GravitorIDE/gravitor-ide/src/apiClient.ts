@@ -94,4 +94,39 @@ export class ApiClient {
             throw error;
         }
     }
+
+    async streamChat(
+        messages: { role: string; content: string }[],
+        onToken: (token: string) => void,
+        activeContext?: { filename: string; content: string } | null
+    ): Promise<void> {
+        try {
+            const response = await fetch(`${this.baseUrl}/chat`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ messages, activeContext, os: process.platform })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Chat error: ${response.statusText}`);
+            }
+
+            const reader = response.body?.getReader();
+            if (!reader) {
+                return;
+            }
+
+            const decoder = new TextDecoder();
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    break;
+                }
+                onToken(decoder.decode(value, { stream: true }));
+            }
+        } catch (error) {
+            console.error("Chat API Error:", error);
+            throw error;
+        }
+    }
 }

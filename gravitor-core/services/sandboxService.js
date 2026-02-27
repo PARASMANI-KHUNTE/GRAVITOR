@@ -8,7 +8,7 @@ const execAsync = promisify(exec);
  * Enforces a 'confirm-first' policy and restricts dangerous commands.
  */
 export class SandboxService {
-    static ALLOWED_COMMANDS = ["npm test", "ls", "dir", "git status", "pwd", "node -v"];
+    static ALLOWED_COMMANDS = ["npm test", "ls", "dir", "git status", "pwd", "node -v", "type", "cat"];
 
     static isSafe(command) {
         // Simple allow-list for the demo phase

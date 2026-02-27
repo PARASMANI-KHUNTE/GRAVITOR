@@ -3,6 +3,7 @@ import cors from "cors";
 import generateRoute from "./routes/generate.js";
 import indexRoute from "./routes/index.js";
 import terminalRoute from "./routes/terminal.js";
+import chatRoute from "./routes/chat.js";
 import { validateGenerateReq } from "./guards/inputValidator.js";
 
 const app = express();
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use("/generate", validateGenerateReq, generateRoute);
 app.use("/index", indexRoute);
 app.use("/terminal", terminalRoute);
+app.use("/chat", chatRoute);
 
 // Health check
 app.get("/health", (req, res) => res.json({ status: "ok" }));
